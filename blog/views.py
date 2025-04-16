@@ -50,7 +50,7 @@ def serialize_tag_optimized(tag):
 
 
 def index(request):
-    tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
+    # tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
     most_popular_posts = Post.objects.select_related('author').fetch_with_related_data().popular()[:5].fetch_with_comments_count()
 
     fresh_posts = Post.objects.annotate(comments_count=Count('comments', distinct=True)).select_related('author').fetch_with_related_data().order_by('published_at')
@@ -67,9 +67,9 @@ def index(request):
 
 
 def post_detail(request, slug):
-    tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
+    # tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
     post = Post.objects.fetch_with_related_data().select_related('author').get(slug=slug)
-    comments = Comment.objects.filter(post=post).select_related('author')
+    comments = post.comments.filter(post=post).select_related('author')
     serialized_comments = []
     for comment in comments:
         serialized_comments.append({
