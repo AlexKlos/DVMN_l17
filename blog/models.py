@@ -18,7 +18,11 @@ class PostQuerySet(models.QuerySet):
         """
         posts = self
         posts_ids = [post.id for post in posts]
-        posts_with_comments = Post.objects.filter(id__in=posts_ids).annotate(comments_count=Count('comments'))
+        posts_with_comments = (
+            Post.objects
+            .filter(id__in=posts_ids)
+            .annotate(comments_count=Count('comments'))
+        )
         ids_and_comments = posts_with_comments.values_list('id', 'comments_count')
         count_for_id = dict(ids_and_comments)
         
@@ -36,7 +40,11 @@ class PostQuerySet(models.QuerySet):
 class TagQuerySet(models.QuerySet):
 
     def popular(self):
-        popular_tag = self.annotate(related_posts_count=Count('posts')).order_by('-related_posts_count')
+        popular_tag = (
+            self
+            .annotate(related_posts_count=Count('posts'))
+            .order_by('-related_posts_count')
+        )
         
         return popular_tag
 
