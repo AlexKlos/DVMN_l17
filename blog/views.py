@@ -1,4 +1,4 @@
-from django.db.models import Count, Prefetch
+from django.db.models import Count
 from django.shortcuts import render
 from blog.models import Comment, Post, Tag
 
@@ -22,6 +22,9 @@ def serialize_post(post):
 
 
 def serialize_post_optimized(post):
+    tags = list(post.tags.all())
+    first_tag = tags[0] if tags else None
+
     return {
         'title': post.title,
         'teaser_text': post.text[:200],
@@ -31,7 +34,7 @@ def serialize_post_optimized(post):
         'published_at': post.published_at,
         'slug': post.slug,
         'tags': [serialize_tag_optimized(tag) for tag in post.tags.all()],
-        'first_tag_title': post.tags.all().first().title,
+        'first_tag_title': first_tag.title if first_tag else None,
     }
 
 
@@ -50,7 +53,6 @@ def serialize_tag_optimized(tag):
 
 
 def index(request):
-    # tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
     most_popular_posts = Post.objects.select_related('author').fetch_with_related_data().popular()[:5].fetch_with_comments_count()
 
     fresh_posts = Post.objects.annotate(comments_count=Count('comments', distinct=True)).select_related('author').fetch_with_related_data().order_by('published_at')
@@ -67,8 +69,7 @@ def index(request):
 
 
 def post_detail(request, slug):
-    # tags_with_count = Tag.objects.annotate(related_posts_count=Count('posts'))
-    post = Post.objects.fetch_with_related_data().select_related('author').get(slug=slug)
+    post = Post.objects.annotate(likes_count=Count('likes', distinct=True)).fetch_with_related_data().select_related('author').get(slug=slug)
     comments = post.comments.filter(post=post).select_related('author')
     serialized_comments = []
     for comment in comments:
@@ -78,8 +79,6 @@ def post_detail(request, slug):
             'author': comment.author.username,
         })
 
-    likes = post.likes.all()
-
     related_tags = post.tags.all()
 
     serialized_post = {
@@ -87,7 +86,7 @@ def post_detail(request, slug):
         'text': post.text,
         'author': post.author.username,
         'comments': serialized_comments,
-        'likes_amount': len(likes),
+        'likes_amount': post.likes_count,
         'image_url': post.image.url if post.image else None,
         'published_at': post.published_at,
         'slug': post.slug,
