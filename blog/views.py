@@ -4,8 +4,7 @@ from blog.models import Comment, Post, Tag
 
 
 def serialize_post_optimized(post):
-    tags = list(post.tags.all())
-    first_tag = tags[0] if tags else None
+    first_tag = post.tags.all().first()
 
     return {
         'title': post.title,
